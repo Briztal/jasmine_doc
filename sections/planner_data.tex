@@ -1,0 +1,121 @@
+\newpage
+
+\section{Planner data structures}
+
+This section discusses the format of data structures in the planner implementation.
+
+The planner implementation comprises {\color{red} TODO NUMBER} main data structures :
+the trajectory structure, the transition structure, and the planner structure;
+
+\subsection{Trajectory}
+
+A trajectory structure, as introduced in the section about the planner's algorithm, is 
+define like below :
+
+\begin{lstlisting}[style=CStyle]
+
+struct trajectory {
+	
+	//The dimension of the trajectory;
+	const size_t t_dim;
+	
+	//The start index, minimal value of the index;
+	const float t_imin;
+	
+	//The stop index, maximal value of the index;
+	const float t_imax;
+	
+	//An index increment that can cause significant increments on point coordinates;
+	const float t_dincr;
+	
+	//The trajectory function;
+	void (*const t_function)(float index, float *dst_array, size_t dst_size);
+	
+};
+
+\end{lstlisting}
+
+This is the root structure for all trajectories. A particular trajectory will use composition 
+to allow pointer cast, like below : 
+
+\begin{lstlisting}[style=CStyle]
+
+struct rdm_trajectory{
+
+	//Composition, with a trajectory struct;
+	struct trajectory traj_data;
+	
+	//rdm_trajectory struct data;
+	...	
+
+};
+
+\end{lstlisting}
+
+
+\subsection{A trajectory's lifetime in the planner}
+
+A trajectory is not created by the planner. An external program is in charge of creating the trajectory of 
+the right type, and to transfer it to the planner. 
+The planner will store it in a list, process it entirely, providing chosen coordinates.
+During its processing, the trajectory can be consulted by another piece of code, for other computation.
+When it its processing is complete, the trajectory can be deleted. As the planner did not create it, it 
+does not delete it. This task is delegated to another piece of code. 
+
+This transfer of the trajectory to the planner can by done directly by reference : the algorithm creates an 
+instance of appropriate type of trajectory, and passes a reference to the planner. 
+
+This solution raises a problem, when applied to a real use case. Indeed, the trajectory itself
+is only a part of what will define the movement. Once the current point of a trajectory and its index
+have been chosen by the planner, some other piece of code may use this information to complete the target.
+For example, if we want to draw a line on a 2D machine, and to increase the speed linearly from one speed to 
+another, the speed target must be evaluated after the target trajectory position is determined, from the
+chosen index.
+
+In reality, the trajectory is a part of some more complex object that is meant to determine the movement.
+This kind of struct cannot contain a trajectory struct directly (composition) because the trajectory struct
+only has a meaning when it is composed to form an actual trajectory. 
+
+
+\subsection{Planner element}
+
+To solve this problem, we will define the planner object structure : 
+
+\begin{lstlisting}[style=CStyle]  
+
+struct planner_elmt {
+	
+	//A list head, for list storage;
+	struct list_head pe_head;
+	
+	//The trajectory that the planner should process;
+	struct trajectory *pe_traj;
+	
+};
+
+\end{lstlisting}
+
+
+\subsection{Transition}
+
+A transition references a point where some brutal direction change occurs. Its is formated like below : 
+
+\begin{lstlisting}[style=CStyle]
+
+struct planner_elmt {
+
+
+};
+
+\end{lstlisting}
+
+
+
+\subsection{Transition lifecycle in the planner}
+
+In opposition to the trajectory, the transition is created, and so, deleted by the planner.
+When it re
+
+
+
+

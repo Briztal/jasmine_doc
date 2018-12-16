@@ -1,0 +1,15 @@
+\contentsline {section}{\numberline {1}Planner}{2}
+\contentsline {subsection}{\numberline {1.1}Trajectory}{2}
+\contentsline {subsection}{\numberline {1.2}Hook mode}{2}
+\contentsline {subsection}{\numberline {1.3}Transition point}{3}
+\contentsline {subsection}{\numberline {1.4}Managing transition points}{3}
+\contentsline {subsection}{\numberline {1.5}Trajectory mode}{4}
+\contentsline {subsection}{\numberline {1.6}Prediction}{5}
+\contentsline {subsection}{\numberline {1.7}Search procedures}{6}
+\contentsline {subsection}{\numberline {1.8}Algorithm}{6}
+\contentsline {subsection}{\numberline {1.9}Limit cases}{7}
+\contentsline {subsection}{\numberline {1.10}Faults}{7}
+\contentsline {subsection}{\numberline {1.11}Interrupt levels}{7}
+\contentsline {section}{\numberline {2}Planner data structures}{8}
+\contentsline {subsection}{\numberline {2.1}Trajectory}{8}
+\contentsline {subsection}{\numberline {2.2}A trajectory's lifetime in the planner}{8}
