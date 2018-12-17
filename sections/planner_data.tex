@@ -3,9 +3,10 @@
 \section{Planner data structures}
 
 This section discusses the format of data structures in the planner implementation.
+\newline
 
-The planner implementation comprises {\color{red} TODO NUMBER} main data structures :
-the trajectory structure, the transition structure, and the planner structure;
+The planner implementation comprises five main data structures :
+the trajectory, the panner element, the transition, the transition factory and the planner;
 
 \subsection{Trajectory}
 
@@ -35,8 +36,10 @@ struct trajectory {
 
 \end{lstlisting}
 
-This is the root structure for all trajectories. A particular trajectory will use composition 
-to allow pointer cast, like below : 
+This is the root structure for all trajectories.
+\newline
+
+A particular trajectory will use composition to allow pointer cast, like below : 
 
 \begin{lstlisting}[style=CStyle]
 
@@ -61,9 +64,11 @@ The planner will store it in a list, process it entirely, providing chosen coord
 During its processing, the trajectory can be consulted by another piece of code, for other computation.
 When it its processing is complete, the trajectory can be deleted. As the planner did not create it, it 
 does not delete it. This task is delegated to another piece of code. 
+\newline
 
 This transfer of the trajectory to the planner can by done directly by reference : the algorithm creates an 
 instance of appropriate type of trajectory, and passes a reference to the planner. 
+\newline
 
 This solution raises a problem, when applied to a real use case. Indeed, the trajectory itself
 is only a part of what will define the movement. Once the current point of a trajectory and its index
@@ -71,15 +76,18 @@ have been chosen by the planner, some other piece of code may use this informati
 For example, if we want to draw a line on a 2D machine, and to increase the speed linearly from one speed to 
 another, the speed target must be evaluated after the target trajectory position is determined, from the
 chosen index.
+\newline
+
+\newpage
 
 In reality, the trajectory is a part of some more complex object that is meant to determine the movement.
 This kind of struct cannot contain a trajectory struct directly (composition) because the trajectory struct
 only has a meaning when it is composed to form an actual trajectory. 
-
+\newline
 
 \subsection{Planner element}
 
-To solve this problem, we will define the planner object structure : 
+This problem is solved by introducing the planner object struct : 
 
 \begin{lstlisting}[style=CStyle]  
 
@@ -95,6 +103,12 @@ struct planner_elmt {
 
 \end{lstlisting}
 
+This structure contains a list head for storage in the planner, and a trajectory struct ref.
+\newline
+
+It can be used freely in composition.
+\newline
+
 
 \subsection{Transition}
 
@@ -102,20 +116,153 @@ A transition references a point where some brutal direction change occurs. Its i
 
 \begin{lstlisting}[style=CStyle]
 
-struct planner_elmt {
+/**
+ * A transition represents a sudden change of direction, from dir0 to dir1, defined by their coordinates, a at
+ *  certain position;
+ *
+ *  The transition struct only provides base data : point and directions coordinates.
+ *
+ *  A regulation algorithm will use this data as a base and compute its proprietary data from it.
+ */
 
+struct transition {
+	
+	//A list head, for storage in the planner;	
+	struct list_head t_head;
 
+    //The position of the transition point;   
+    float t_pos[];
+
+    //Movement direction before the direction change;
+    float t_dir0[];
+
+    //Movement direction, after the direction change;
+    float t_dir1[];
+
+};
+
+The transition struct aims to store basic transition data, as stated previously, but also, to support 
+composition, so that a regulation algorithm can define its own type of transition structure. 
+Indeed, the transition struct only provided point and direction coordinates, which is not enough for 
+a proper regulation algorithm. Proprietary (implementation dependent) data are to be computed for each 
+transition, and those need a place to be stored in.
+\newline
+
+\end{lstlisting}
+
+\newpage
+
+\subsection{Transition factory}
+
+Let us examine the lifecycle of a transition struct in the planner : 
+
+\begin{itemize}
+
+\item[-] A transition struct is created at the will of the planner.
+
+\item[-] When the transition is updated (at its creation or its modification), proprietary data must be 
+updated accordingly.
+
+\item[-] When the transition is outdated, it must be deleted, at the planner's will again. 
+Though, as stated before, the planner doesn't know the exact format of the struct that it manipulates, 
+only that it is composed by a transition struct. It can't by himself ensure the proper deletion.
+The same fact applies to the creation. 
+
+\end{itemize}
+
+These actions will be taken by another piece of code, the transition factory, that is, as stated, in charge
+of creating, updating, and deleting proprietary transition structs.
+The transition factory is formated like below : 
+
+\begin{lstlisting}[style=CStyle]
+
+struct transiton_factory {
+	
+	//Create a transition.
+	struct transition *(*create_transition)(struct transition_factory *factory, size_t dimension);
+	
+	//Update proprietary data; The factory, the transition to update,
+	// and the ref of the list's first transition are provided
+	void (*update_transition)(
+		struct transition_factory *factory,
+		struct transition *trans,
+		const struct transition *first_trans
+	);
+	
+	//Delete a transition;
+	void (*delete_transition)(struct transition_factory *factory, struct transition *trans);
+	
 };
 
 \end{lstlisting}
 
+At any moment, the transitions list may be queried by any external piece of code, that is aware of the
+proprietary struct format, for regulation purposes. 
+
+\subsection{Planner modes}
+
+As described in the section about planner algorithm, the planner has two modes : 
+\begin{itemize}
+\item[-] hook mode : the planner must hook the next transition point;
+\item[-] trajectory mode : the planner must process the current trajectory;
+\end{itemize}
+
+The planner\_mode struct is with no surprise, formatted like below : 
+
+\begin{lstlisting}[style=Cstyle]
+
+enum planner_mode {
+	
+	PLANNER_HOOK_MODE, 
+	
+	PLANNER_TRAJECTORY_MODE,
+	
+};
+
+\end{lstlisting}
+
+%TODO Trajectory mode environment.
+
+\subsection{Planner}
+
+At last, we introduce the planner data structure, that keeps all things together. 
 
 
-\subsection{Transition lifecycle in the planner}
+\begin{lstlisting}[style=Cstyle]
 
-In opposition to the trajectory, the transition is created, and so, deleted by the planner.
-When it re
+struct planner {
+	
+	//The dimension of the planner.
+	const size_t p_size;
 
+	//The list of planner elements;
+	struct planner_elmt *p_elmts;
+	
+	//The current transition;
+	struct transition *p_trans;
+	
+	//The transition factory;
+	struct transiton_factory *p_tfactory;
+	
+	//The current index in the current trajectory;
+	float p_index;
 
+	//The current increment in the current trajectory;
+	float p_incr;
+	
+	//The minimal distance bound;
+	const float p_dmin;
+	
+	//The target distance;
+	const float p_dtarget;
+	
+	//The maximal distance bound;
+	const float p_dmax;
+	
+};
 
+\end{lstlisting}
+
+The planner stores references to all previously described objects, and some other fields (p\_index, p\_incr, 
+p\_dimn, p\_dtarget, and p\_dmax) that are used when processing a particular trajectory. 
 
