@@ -6,9 +6,36 @@
 This section describes the planner algorithm implemented in the project.
 \newline
 
-A planner's purpose is, given a set of trajectories that share the same dimension, to generate a sequence of 
-points, belonging (or not) to those trajectories.
-\newline
+Suppose we have access to a system whose behaviour must be controlled. 
+This system must follow a sequence of trajectories, trajectories that define a sequence of target positions
+the system will have to reach.
+As it is possible for the system to reach these positions, it is also possible that it does not. 
+Some external perturbations may affect the system, that would not reach its target positions.
+Considering those perturbations forces to generate a target position knowing the system's current position.
+The system will be said to be controlled in closed loop.
+
+Theoretically, any point of any trajectory is a potential target.
+The only pieces of informations we have to decide which point to choose are : 
+
+\begint{itemize}
+
+\item[-] the current position of the system; this information gives a way to compare two candidate target
+points. Their positions relatively to the current position will help to decide which one to choose. 
+
+\item[-] the previous target point, or the start position; this information gives a position to start 
+searching for a target point; 
+
+\end{itemize}
+
+That being said, the generation of a target positon appears \footnote{and obviously is} a complex process.
+
+A particular algorithm, called a planner, will be used for this purpose.
+
+A planner is an algorithm that, given a sequence of trajectories, a point of a trajectory to start searching 
+at, and a current position, searches the trajectories sequence from the start point for a valid target
+position.
+
+newline
 
 In order to describe its main objectives more accurately, we need to elaborate a bit on the notion of 
 trajectory.
@@ -40,8 +67,45 @@ $t_f$.
 Its aim is to fully determine the path that some system must follow in this space;
 
 
+\subsection{Target point choice}
+
+As we stated earlier, any point of any trajectory is a candidate target, and the planner has to choose 
+between all those possible points.
+To do this, the planner considers the distance between a candidate target, and the current position.
+
+The planner is given a positive interval, called the target interval, with the objective to
+find a point of a trajectory whose distance from the current position belongs to the target interval.
+
+Given the current position, the target interval defines a set of valid points, that verify the distance 
+condition. 
+
+The sequence of trajectories may or may not intersect this set in several portions of trajectories.
+
+The planner must at first determine these candidate portions. Several parameters may influence the 
+search. Among these parameters, is or is not the start position, that gives a point in the trajectory to start
+searching at. 
+
+When the planner has finished searching for candidate portions, it must choose a point in one of them. 
+Many parameters may influence the choice. If trajectories must be followed in order, the planner may choose
+the closest portion of trajectory to start point, and choose a point close to a distance target. 
+
+If trajectories may be skipped, at the benefit of the traversal speed, the planner may choose the last 
+candidate portion (closest to the end of the sequence), and also, choose a point close to a distance target.
+
+
 \subsection{Hook mode}
 
+No constraint has been imposed on trajectories in the trajectory sequence, except that trajectories must be 
+continuous. Successive trajectories may be disjoint, ie, have separate initial and final points.
+
+When reaching the final position of a trajectory, and attempting to reach the initial point of the next
+trajectory, if the distance between stated points does not belong to the target interval, no valid target
+point may be found.
+
+
+
+
+%TODO REWRITE THIS
 Let us consider now, two trajectories, $u$ and $v$ that share the same dimension, and must be followed one 
 after the other, $u_i$, $u_f$, $v_i$, $v_f$ initial and final points of $u$ and $v$.
 If both trajectories are joint, ie $u_f = v_i$, the path between $u_i$ and $v_f$ is fully determined.
@@ -253,6 +317,17 @@ $D \in [d_0, d_1]$ is found.
 
 
 \subsection{Algorithm}
+
+
+
+
+
+
+
+
+
+
+
 
 At the beginning stage of the algorithm, only the point at $i_e$ and its distance are computed.
 No indication is available on how the distance will vary when the index does. 
